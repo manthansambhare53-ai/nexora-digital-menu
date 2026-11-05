@@ -1,0 +1,260 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexora Menu Dashboard</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;color:#222}
+header{background:#171717;color:white;padding:20px;text-align:center}
+main{max-width:650px;margin:20px auto;padding:15px}
+.box{background:white;padding:18px;border-radius:12px;margin-bottom:16px}
+input,button{width:100%;padding:12px;margin:7px 0;border-radius:7px;border:1px solid #ccc;font-size:16px}
+button{background:#171717;color:white;border:0;cursor:pointer}
+button.delete{background:#b52c2c}
+button.secondary{background:#777}
+.item{background:#fafafa;border:1px solid #ddd;padding:12px;margin:10px 0;border-radius:9px}
+.item button{width:auto;padding:9px 13px}
+.hidden{display:none}
+small{color:#666}
+</style>
+</head>
+<body>
+
+<header>
+<h2>Nexora Digital</h2>
+<p>Restaurant Menu Dashboard</p>
+</header>
+
+<main>
+<section class="box" id="loginBox">
+<h3>Owner Login</h3>
+<input id="email" type="email" placeholder="Owner email">
+<input id="password" type="password" placeholder="Password">
+<button id="loginBtn">Login</button>
+<p id="loginStatus"></p>
+</section>
+
+<section class="box hidden" id="dashboard">
+<h3 id="cafeTitle">Menu Dashboard</h3>
+<p id="ownerStatus"></p>
+<button class="secondary" id="logoutBtn">Logout</button>
+
+<hr>
+<h3>Add Menu Item</h3>
+<input id="itemName" placeholder="Food item name">
+<input id="itemPrice" type="number" min="0" step="0.01" placeholder="Price (₹)">
+<input id="itemCategory" placeholder="Category (e.g. Drinks)">
+<input id="itemImage" type="url" placeholder="Image URL (optional)">
+<button id="addBtn">Add Item</button>
+<p id="addStatus"></p>
+
+<hr>
+<h3>Your Menu Items</h3>
+<div id="itemsList">Loading items...</div>
+</section>
+</main>
+
+<script type="module">
+import { initializeApp } from
+"https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+
+import {
+ getFirestore, doc, getDoc, collection, addDoc,
+ deleteDoc, updateDoc, onSnapshot
+} from
+"https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+import {
+ getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from
+"https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+
+const firebaseConfig = {
+ apiKey: "YOUR_API_KEY",
+ authDomain: "YOUR_AUTH_DOMAIN",
+ projectId: "YOUR_PROJECT_ID",
+ storageBucket: "YOUR_STORAGE_BUCKET",
+ messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+ appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+const cafeId = "cafe123";
+const loginBox = document.getElementById("loginBox");
+const dashboard = document.getElementById("dashboard");
+const loginStatus = document.getElementById("loginStatus");
+const itemsList = document.getElementById("itemsList");
+
+let unsubscribeItems = null;
+let authorized = false;
+
+document.getElementById("loginBtn").addEventListener("click", async () => {
+ const email = document.getElementById("email").value.trim();
+ const password = document.getElementById("password").value;
+
+ if (!email || !password) {
+   loginStatus.textContent = "Enter your email and password.";
+   return;
+ }
+
+ loginStatus.textContent = "Signing in...";
+
+ try {
+   await signInWithEmailAndPassword(auth, email, password);
+ } catch (error) {
+   loginStatus.textContent = "Login failed: " + error.message;
+ }
+});
+
+onAuthStateChanged(auth, async (user) => {
+ authorized = false;
+
+ if (unsubscribeItems) {
+   unsubscribeItems();
+   unsubscribeItems = null;
+ }
+
+ if (!user) {
+   loginBox.classList.remove("hidden");
+   dashboard.classList.add("hidden");
+   return;
+ }
+
+ try {
+   const cafeRef = doc(db, "cafes", cafeId);
+   const cafeSnap = await getDoc(cafeRef);
+
+   if (!cafeSnap.exists() ||
+       cafeSnap.data().ownerUid !== user.uid) {
+     await signOut(auth);
+     loginStatus.textContent =
+       "This account is not authorized for this restaurant.";
+     return;
+   }
+
+   authorized = true;
+   loginBox.classList.add("hidden");
+   dashboard.classList.remove("hidden");
+
+   const cafe = cafeSnap.data();
+   document.getElementById("cafeTitle").textContent =
+     (cafe.name || "Restaurant") + " Dashboard";
+   document.getElementById("ownerStatus").textContent =
+     "Signed in as " + user.email;
+
+   loadItems();
+ } catch (error) {
+   loginStatus.textContent = "Could not verify owner: " + error.message;
+   await signOut(auth);
+ }
+});
+
+function loadItems() {
+ const itemsRef = collection(db, "cafes", cafeId, "items");
+
+ unsubscribeItems = onSnapshot(itemsRef, (snapshot) => {
+   itemsList.innerHTML = "";
+
+   if (snapshot.empty) {
+     itemsList.textContent = "No menu items yet.";
+     return;
+   }
+
+   snapshot.forEach((itemDoc) => {
+     const item = itemDoc.data();
+     const card = document.createElement("div");
+     card.className = "item";
+
+     const title = document.createElement("strong");
+     title.textContent = item.name || "Unnamed item";
+
+     const info = document.createElement("p");
+     info.textContent =
+       "₹" + Number(item.price || 0) +
+       " | " + (item.category || "Other") +
+       " | " + (item.available ? "Available" : "Unavailable");
+
+     const toggle = document.createElement("button");
+     toggle.className = "secondary";
+     toggle.textContent = item.available ? "Mark unavailable" : "Mark available";
+     toggle.addEventListener("click", async () => {
+       if (!authorized) return;
+       try {
+         await updateDoc(itemDoc.ref, {
+           available: !item.available
+         });
+       } catch (error) {
+         alert("Update failed: " + error.message);
+       }
+     });
+
+     const remove = document.createElement("button");
+     remove.className = "delete";
+     remove.textContent = "Delete";
+     remove.addEventListener("click", async () => {
+       if (!authorized) return;
+       if (!confirm("Delete " + (item.name || "this item") + "?")) return;
+       try {
+         await deleteDoc(itemDoc.ref);
+       } catch (error) {
+         alert("Delete failed: " + error.message);
+       }
+     });
+
+     card.append(title, info, toggle, remove);
+     itemsList.appendChild(card);
+   });
+ }, (error) => {
+   itemsList.textContent = "Could not load items: " + error.message;
+ });
+}
+
+document.getElementById("addBtn").addEventListener("click", async () => {
+ if (!authorized) return;
+
+ const name = document.getElementById("itemName").value.trim();
+ const priceText = document.getElementById("itemPrice").value;
+ const category = document.getElementById("itemCategory").value.trim();
+ const image = document.getElementById("itemImage").value.trim();
+ const price = Number(priceText);
+ const addStatus = document.getElementById("addStatus");
+
+ if (!name || priceText === "" || !category ||
+     !Number.isFinite(price) || price < 0) {
+   addStatus.textContent = "Enter a name, valid price and category.";
+   return;
+ }
+
+ addStatus.textContent = "Adding item...";
+
+ try {
+   await addDoc(collection(db, "cafes", cafeId, "items"), {
+     name,
+     price,
+     category,
+     image,
+     available: true
+   });
+
+   document.getElementById("itemName").value = "";
+   document.getElementById("itemPrice").value = "";
+   document.getElementById("itemCategory").value = "";
+   document.getElementById("itemImage").value = "";
+   addStatus.textContent = "Item added successfully.";
+ } catch (error) {
+   addStatus.textContent = "Could not add item: " + error.message;
+ }
+});
+
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+ await signOut(auth);
+});
+</script>
+</body>
+</html>
