@@ -4,257 +4,404 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nexora Menu Dashboard</title>
+<title>Owner Dashboard | Nexora Digital</title>
+
 <style>
 *{box-sizing:border-box}
-body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;color:#222}
-header{background:#171717;color:white;padding:20px;text-align:center}
-main{max-width:650px;margin:20px auto;padding:15px}
-.box{background:white;padding:18px;border-radius:12px;margin-bottom:16px}
-input,button{width:100%;padding:12px;margin:7px 0;border-radius:7px;border:1px solid #ccc;font-size:16px}
-button{background:#171717;color:white;border:0;cursor:pointer}
-button.delete{background:#b52c2c}
-button.secondary{background:#777}
-.item{background:#fafafa;border:1px solid #ddd;padding:12px;margin:10px 0;border-radius:9px}
-.item button{width:auto;padding:9px 13px}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f5f3ef;
+  color:#222;
+}
+header{
+  background:#171717;
+  color:white;
+  text-align:center;
+  padding:22px;
+}
+main{max-width:700px;margin:auto;padding:16px}
+.box{
+  background:white;
+  padding:18px;
+  border-radius:12px;
+  margin-bottom:18px;
+  box-shadow:0 2px 8px #0000000d;
+}
+input{
+  width:100%;
+  padding:13px;
+  margin:8px 0;
+  border:1px solid #ccc;
+  border-radius:7px;
+  font-size:16px;
+}
+button{
+  padding:12px 16px;
+  border:0;
+  border-radius:7px;
+  background:#171717;
+  color:white;
+  cursor:pointer;
+  margin:5px 3px 5px 0;
+}
+button:disabled{opacity:.5}
+.red{background:#b52c2c}
+.gold{background:#98702b}
 .hidden{display:none}
-small{color:#666}
+.item{
+  border:1px solid #ddd;
+  border-radius:9px;
+  padding:13px;
+  margin:12px 0;
+  background:#fafafa;
+}
+.item p{margin:8px 0;color:#555}
+.status{font-size:14px;color:#555}
 </style>
 </head>
+
 <body>
 
 <header>
-<h2>Nexora Digital</h2>
-<p>Restaurant Menu Dashboard</p>
+  <h2>NEXORA DIGITAL</h2>
+  <p>Restaurant Owner Dashboard</p>
 </header>
 
 <main>
+
 <section class="box" id="loginBox">
-<h3>Owner Login</h3>
-<input id="email" type="email" placeholder="Owner email">
-<input id="password" type="password" placeholder="Password">
-<button id="loginBtn">Login</button>
-<p id="loginStatus"></p>
+  <h3>Owner Login</h3>
+  <input id="email" type="email" placeholder="Owner email">
+  <input id="password" type="password" placeholder="Password">
+  <button id="loginBtn">Login</button>
+  <p class="status" id="loginStatus"></p>
 </section>
 
-<section class="box hidden" id="dashboard">
-<h3 id="cafeTitle">Menu Dashboard</h3>
-<p id="ownerStatus"></p>
-<button class="secondary" id="logoutBtn">Logout</button>
+<section class="hidden" id="dashboard">
 
-<hr>
-<h3>Add Menu Item</h3>
-<input id="itemName" placeholder="Food item name">
-<input id="itemPrice" type="number" min="0" step="0.01" placeholder="Price (₹)">
-<input id="itemCategory" placeholder="Category (e.g. Drinks)">
-<input id="itemImage" type="url" placeholder="Image URL (optional)">
-<button id="addBtn">Add Item</button>
-<p id="addStatus"></p>
+  <div class="box">
+    <h3 id="cafeTitle">Restaurant Dashboard</h3>
+    <p id="ownerInfo" class="status"></p>
+    <button id="logoutBtn" class="red">Logout</button>
+  </div>
 
-<hr>
-<h3>Your Menu Items</h3>
-<div id="itemsList">Loading items...</div>
+  <div class="box">
+    <h3>Add New Menu Item</h3>
+
+    <input id="itemName" placeholder="Food name">
+    <input id="itemPrice" type="number" min="0"
+      step="0.01" placeholder="Price in ₹">
+    <input id="itemCategory"
+      placeholder="Category (Burger, Drinks, Starter)">
+    <input id="itemImage" type="url"
+      placeholder="Food image URL (optional)">
+
+    <button id="addBtn" class="gold">Add Menu Item</button>
+    <p id="addStatus" class="status"></p>
+  </div>
+
+  <div class="box">
+    <h3>Your Menu Items</h3>
+    <div id="itemsList">Loading...</div>
+  </div>
+
 </section>
+
 </main>
 
 <script type="module">
+
 import { initializeApp } from
 "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 
 import {
- getFirestore, doc, getDoc, collection, addDoc,
- deleteDoc, updateDoc, onSnapshot
+  getFirestore,
+  doc,
+  getDoc,
+  collection,
+  addDoc,
+  deleteDoc,
+  updateDoc,
+  onSnapshot
 } from
 "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 import {
- getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
 } from
 "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 
+// FIREBASE CONFIGURATION
 const firebaseConfig = {
- apiKey: "YOUR_API_KEY",
- authDomain: "YOUR_AUTH_DOMAIN",
- projectId: "YOUR_PROJECT_ID",
- storageBucket: "YOUR_STORAGE_BUCKET",
- messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
- appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCv3yHKRL3Ix6k7W9eECGC7t-pI-AsGw_w",
+  authDomain: "nexora-digital-menu.firebaseapp.com",
+  projectId: "nexora-digital-menu",
+  storageBucket: "nexora-digital-menu.firebasestorage.app",
+  messagingSenderId: "889113287665",
+  appId: "1:889113287665:web:11ac2abddcd733e4148250",
+  measurementId: "G-W7RKCR47MW"
 };
 
+// INITIALIZE FIREBASE
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// RESTAURANT DOCUMENT
 const cafeId = "cafe123";
+
 const loginBox = document.getElementById("loginBox");
 const dashboard = document.getElementById("dashboard");
 const loginStatus = document.getElementById("loginStatus");
 const itemsList = document.getElementById("itemsList");
 
-let unsubscribeItems = null;
 let authorized = false;
+let unsubscribeItems = null;
 
+// OWNER LOGIN
 document.getElementById("loginBtn").addEventListener("click", async () => {
- const email = document.getElementById("email").value.trim();
- const password = document.getElementById("password").value;
 
- if (!email || !password) {
-   loginStatus.textContent = "Enter your email and password.";
-   return;
- }
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const button = document.getElementById("loginBtn");
 
- loginStatus.textContent = "Signing in...";
+  if (!email || !password) {
+    loginStatus.textContent = "Enter email and password.";
+    return;
+  }
 
- try {
-   await signInWithEmailAndPassword(auth, email, password);
- } catch (error) {
-   loginStatus.textContent = "Login failed: " + error.message;
- }
+  button.disabled = true;
+  loginStatus.textContent = "Signing in...";
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    loginStatus.textContent = "";
+  } catch (error) {
+    loginStatus.textContent = "Login failed: " + error.message;
+  } finally {
+    button.disabled = false;
+  }
 });
 
+// CHECK OWNER AUTHORIZATION
 onAuthStateChanged(auth, async (user) => {
- authorized = false;
 
- if (unsubscribeItems) {
-   unsubscribeItems();
-   unsubscribeItems = null;
- }
+  authorized = false;
 
- if (!user) {
-   loginBox.classList.remove("hidden");
-   dashboard.classList.add("hidden");
-   return;
- }
+  if (unsubscribeItems) {
+    unsubscribeItems();
+    unsubscribeItems = null;
+  }
 
- try {
-   const cafeRef = doc(db, "cafes", cafeId);
-   const cafeSnap = await getDoc(cafeRef);
+  dashboard.classList.add("hidden");
+  loginBox.classList.remove("hidden");
 
-   if (!cafeSnap.exists() ||
-       cafeSnap.data().ownerUid !== user.uid) {
-     await signOut(auth);
-     loginStatus.textContent =
-       "This account is not authorized for this restaurant.";
-     return;
-   }
+  if (!user) return;
 
-   authorized = true;
-   loginBox.classList.add("hidden");
-   dashboard.classList.remove("hidden");
+  loginStatus.textContent = "Checking account...";
 
-   const cafe = cafeSnap.data();
-   document.getElementById("cafeTitle").textContent =
-     (cafe.name || "Restaurant") + " Dashboard";
-   document.getElementById("ownerStatus").textContent =
-     "Signed in as " + user.email;
+  try {
+    const cafeRef = doc(db, "cafes", cafeId);
+    const cafeSnap = await getDoc(cafeRef);
 
-   loadItems();
- } catch (error) {
-   loginStatus.textContent = "Could not verify owner: " + error.message;
-   await signOut(auth);
- }
+    if (auth.currentUser?.uid !== user.uid) return;
+
+    if (!cafeSnap.exists() ||
+        cafeSnap.data().ownerUid !== user.uid) {
+
+      loginStatus.textContent =
+        "This account is not authorized for this restaurant.";
+
+      await signOut(auth);
+      return;
+    }
+
+    authorized = true;
+
+    loginBox.classList.add("hidden");
+    dashboard.classList.remove("hidden");
+
+    const cafe = cafeSnap.data();
+
+    document.getElementById("cafeTitle").textContent =
+      (cafe.name || "Restaurant") + " Dashboard";
+
+    document.getElementById("ownerInfo").textContent =
+      "Logged in as: " + user.email;
+
+    loadItems();
+
+  } catch (error) {
+    loginStatus.textContent =
+      "Authorization error: " + error.message;
+
+    await signOut(auth);
+  }
+
 });
 
+// LOAD MENU ITEMS
 function loadItems() {
- const itemsRef = collection(db, "cafes", cafeId, "items");
 
- unsubscribeItems = onSnapshot(itemsRef, (snapshot) => {
-   itemsList.innerHTML = "";
+  const itemsRef = collection(
+    db, "cafes", cafeId, "items"
+  );
 
-   if (snapshot.empty) {
-     itemsList.textContent = "No menu items yet.";
-     return;
-   }
+  unsubscribeItems = onSnapshot(itemsRef, (snapshot) => {
 
-   snapshot.forEach((itemDoc) => {
-     const item = itemDoc.data();
-     const card = document.createElement("div");
-     card.className = "item";
+    if (!authorized) return;
 
-     const title = document.createElement("strong");
-     title.textContent = item.name || "Unnamed item";
+    itemsList.innerHTML = "";
 
-     const info = document.createElement("p");
-     info.textContent =
-       "₹" + Number(item.price || 0) +
-       " | " + (item.category || "Other") +
-       " | " + (item.available ? "Available" : "Unavailable");
+    if (snapshot.empty) {
+      itemsList.textContent = "No menu items found.";
+      return;
+    }
 
-     const toggle = document.createElement("button");
-     toggle.className = "secondary";
-     toggle.textContent = item.available ? "Mark unavailable" : "Mark available";
-     toggle.addEventListener("click", async () => {
-       if (!authorized) return;
-       try {
-         await updateDoc(itemDoc.ref, {
-           available: !item.available
-         });
-       } catch (error) {
-         alert("Update failed: " + error.message);
-       }
-     });
+    snapshot.forEach((itemDoc) => {
 
-     const remove = document.createElement("button");
-     remove.className = "delete";
-     remove.textContent = "Delete";
-     remove.addEventListener("click", async () => {
-       if (!authorized) return;
-       if (!confirm("Delete " + (item.name || "this item") + "?")) return;
-       try {
-         await deleteDoc(itemDoc.ref);
-       } catch (error) {
-         alert("Delete failed: " + error.message);
-       }
-     });
+      const item = itemDoc.data();
 
-     card.append(title, info, toggle, remove);
-     itemsList.appendChild(card);
-   });
- }, (error) => {
-   itemsList.textContent = "Could not load items: " + error.message;
- });
+      const card = document.createElement("div");
+      card.className = "item";
+
+      const title = document.createElement("strong");
+      title.textContent = item.name || "Unnamed item";
+
+      const info = document.createElement("p");
+      info.textContent =
+        "Price: ₹" + Number(item.price || 0) +
+        " | Category: " + (item.category || "Other") +
+        " | " + (item.available ? "Available" : "Unavailable");
+
+      const toggle = document.createElement("button");
+      toggle.className = "gold";
+      toggle.textContent = item.available
+        ? "Mark unavailable"
+        : "Mark available";
+
+      toggle.addEventListener("click", async () => {
+
+        if (!authorized) return;
+
+        toggle.disabled = true;
+
+        try {
+          await updateDoc(itemDoc.ref, {
+            available: !item.available
+          });
+        } catch (error) {
+          alert("Update failed: " + error.message);
+        } finally {
+          toggle.disabled = false;
+        }
+
+      });
+
+      const remove = document.createElement("button");
+      remove.className = "red";
+      remove.textContent = "Delete";
+
+      remove.addEventListener("click", async () => {
+
+        if (!authorized) return;
+
+        if (!confirm("Delete this menu item?")) return;
+
+        remove.disabled = true;
+
+        try {
+          await deleteDoc(itemDoc.ref);
+        } catch (error) {
+          alert("Delete failed: " + error.message);
+        } finally {
+          remove.disabled = false;
+        }
+
+      });
+
+      card.append(title, info, toggle, remove);
+      itemsList.appendChild(card);
+
+    });
+
+  }, (error) => {
+    itemsList.textContent =
+      "Could not load items: " + error.message;
+  });
+
 }
 
+// ADD MENU ITEM
 document.getElementById("addBtn").addEventListener("click", async () => {
- if (!authorized) return;
 
- const name = document.getElementById("itemName").value.trim();
- const priceText = document.getElementById("itemPrice").value;
- const category = document.getElementById("itemCategory").value.trim();
- const image = document.getElementById("itemImage").value.trim();
- const price = Number(priceText);
- const addStatus = document.getElementById("addStatus");
+  if (!authorized) return;
 
- if (!name || priceText === "" || !category ||
-     !Number.isFinite(price) || price < 0) {
-   addStatus.textContent = "Enter a name, valid price and category.";
-   return;
- }
+  const name = document.getElementById("itemName").value.trim();
+  const priceText = document.getElementById("itemPrice").value;
+  const category = document.getElementById("itemCategory").value.trim();
+  const image = document.getElementById("itemImage").value.trim();
+  const price = Number(priceText);
 
- addStatus.textContent = "Adding item...";
+  const addStatus = document.getElementById("addStatus");
+  const button = document.getElementById("addBtn");
 
- try {
-   await addDoc(collection(db, "cafes", cafeId, "items"), {
-     name,
-     price,
-     category,
-     image,
-     available: true
-   });
+  if (!name || priceText === "" || !category ||
+      !Number.isFinite(price) || price < 0) {
 
-   document.getElementById("itemName").value = "";
-   document.getElementById("itemPrice").value = "";
-   document.getElementById("itemCategory").value = "";
-   document.getElementById("itemImage").value = "";
-   addStatus.textContent = "Item added successfully.";
- } catch (error) {
-   addStatus.textContent = "Could not add item: " + error.message;
- }
+    addStatus.textContent =
+      "Enter a valid name, price and category.";
+
+    return;
+  }
+
+  button.disabled = true;
+  addStatus.textContent = "Adding item...";
+
+  try {
+
+    await addDoc(
+      collection(db, "cafes", cafeId, "items"),
+      {
+        name: name,
+        price: price,
+        category: category,
+        image: image,
+        available: true
+      }
+    );
+
+    document.getElementById("itemName").value = "";
+    document.getElementById("itemPrice").value = "";
+    document.getElementById("itemCategory").value = "";
+    document.getElementById("itemImage").value = "";
+
+    addStatus.textContent = "Menu item added successfully.";
+
+  } catch (error) {
+
+    addStatus.textContent =
+      "Could not add item: " + error.message;
+
+  } finally {
+    button.disabled = false;
+  }
+
 });
 
+// OWNER LOGOUT
 document.getElementById("logoutBtn").addEventListener("click", async () => {
- await signOut(auth);
+  try {
+    await signOut(auth);
+  } catch (error) {
+    alert("Logout failed: " + error.message);
+  }
 });
+
 </script>
 </body>
 </html>
