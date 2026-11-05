@@ -4,25 +4,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Restaurant Menu</title>
+  <title>Restaurant Menu | Nexora Digital</title>
+
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: #f7f5f0;
       color: #222;
     }
+
     header {
       background: #171717;
       color: white;
-      padding: 28px 18px;
+      padding: 30px 18px;
       text-align: center;
     }
+
     header h1 { margin: 0 0 8px; }
     header p { margin: 0; color: #ddd; }
-    main { max-width: 700px; margin: auto; padding: 18px; }
-    h2 { margin-top: 26px; border-bottom: 2px solid #c69b45; padding-bottom: 8px; }
+
+    main {
+      max-width: 700px;
+      margin: auto;
+      padding: 18px;
+    }
+
+    h2 {
+      margin-top: 26px;
+      border-bottom: 2px solid #c69b45;
+      padding-bottom: 8px;
+    }
+
     .item {
       display: flex;
       gap: 14px;
@@ -33,6 +48,7 @@
       margin: 12px 0;
       box-shadow: 0 2px 8px #0000000d;
     }
+
     .item img {
       width: 90px;
       height: 90px;
@@ -40,13 +56,29 @@
       border-radius: 9px;
       background: #eee;
     }
+
     .details { flex: 1; }
     .details h3 { margin: 0 0 8px; }
-    .price { font-weight: bold; color: #98702b; }
-    #status { text-align: center; padding: 25px; }
-    footer { text-align: center; padding: 20px; color: #777; }
+    .price {
+      font-weight: bold;
+      color: #98702b;
+      font-size: 17px;
+    }
+
+    #status {
+      text-align: center;
+      padding: 25px;
+      color: #555;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #777;
+    }
   </style>
 </head>
+
 <body>
 
 <header>
@@ -62,113 +94,176 @@
 <footer>Powered by Nexora Digital</footer>
 
 <script type="module">
+
   import { initializeApp } from
     "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 
   import {
-    getFirestore, doc, collection, onSnapshot
+    getFirestore,
+    doc,
+    collection,
+    onSnapshot
   } from
     "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
+  // YOUR FIREBASE CONFIGURATION
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyCv3yHKRL3Ix6k7W9eECGC7t-pI-AsGw_w",
+    authDomain: "nexora-digital-menu.firebaseapp.com",
+    projectId: "nexora-digital-menu",
+    storageBucket: "nexora-digital-menu.firebasestorage.app",
+    messagingSenderId: "889113287665",
+    appId: "1:889113287665:web:11ac2abddcd733e4148250",
+    measurementId: "G-W7RKCR47MW"
   };
 
+  // INITIALIZE FIREBASE
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  const cafeId = new URLSearchParams(location.search).get("id");
+  // GET RESTAURANT ID FROM URL
+  const cafeId = new URLSearchParams(
+    window.location.search
+  ).get("id");
+
   const status = document.getElementById("status");
   const menu = document.getElementById("menu");
 
   if (!cafeId) {
+
     status.textContent = "Invalid menu link.";
+
   } else {
+
     const cafeRef = doc(db, "cafes", cafeId);
 
+    // LOAD RESTAURANT DETAILS
     onSnapshot(cafeRef, (snapshot) => {
-      if (!snapshot.exists() || snapshot.data().active !== true) {
-        status.textContent = "This restaurant menu is unavailable.";
+
+      if (!snapshot.exists() ||
+          snapshot.data().active !== true) {
+
+        status.textContent =
+          "This restaurant menu is unavailable.";
+
         menu.innerHTML = "";
         return;
       }
 
       const cafe = snapshot.data();
-      document.getElementById("cafeName").textContent = cafe.name || "Restaurant";
+
+      document.getElementById("cafeName").textContent =
+        cafe.name || "Restaurant";
+
       document.getElementById("description").textContent =
         cafe.description || "";
+
     }, (error) => {
-      status.textContent = "Could not load restaurant details.";
+
+      status.textContent =
+        "Could not load restaurant details.";
+
       console.error(error);
+
     });
 
-    onSnapshot(collection(db, "cafes", cafeId, "items"), (snapshot) => {
+    // LOAD MENU ITEMS LIVE
+    const itemsRef = collection(
+      db, "cafes", cafeId, "items"
+    );
+
+    onSnapshot(itemsRef, (snapshot) => {
+
       menu.innerHTML = "";
+
       const categories = {};
 
       snapshot.forEach((itemDoc) => {
+
         const item = itemDoc.data();
+
         if (item.available !== true) return;
 
         const category = item.category || "Other";
-        if (!categories[category]) categories[category] = [];
+
+        if (!categories[category]) {
+          categories[category] = [];
+        }
+
         categories[category].push(item);
+
       });
 
       if (Object.keys(categories).length === 0) {
-        status.textContent = "No menu items available right now.";
+
+        status.textContent =
+          "No menu items available right now.";
+
         return;
       }
 
       status.textContent = "";
 
-      Object.entries(categories).forEach(([category, items]) => {
-        const section = document.createElement("section");
-        const heading = document.createElement("h2");
-        heading.textContent = category;
-        section.appendChild(heading);
+      Object.entries(categories).forEach(
+        ([category, items]) => {
 
-        items.forEach((item) => {
-          const card = document.createElement("div");
-          card.className = "item";
+          const section = document.createElement("section");
 
-          if (item.image) {
-            const img = document.createElement("img");
-            img.src = item.image;
-            img.alt = item.name || "Food item";
-            img.loading = "lazy";
-            card.appendChild(img);
-          }
+          const heading = document.createElement("h2");
+          heading.textContent = category;
 
-          const details = document.createElement("div");
-          details.className = "details";
+          section.appendChild(heading);
 
-          const name = document.createElement("h3");
-          name.textContent = item.name || "Menu item";
+          items.forEach((item) => {
 
-          const price = document.createElement("div");
-          price.className = "price";
-          price.textContent = "₹" + Number(item.price || 0);
+            const card = document.createElement("div");
+            card.className = "item";
 
-          details.append(name, price);
-          card.appendChild(details);
-          section.appendChild(card);
-        });
+            if (item.image) {
 
-        menu.appendChild(section);
-      });
+              const img = document.createElement("img");
+
+              img.src = item.image;
+              img.alt = item.name || "Food item";
+              img.loading = "lazy";
+
+              card.appendChild(img);
+            }
+
+            const details = document.createElement("div");
+            details.className = "details";
+
+            const name = document.createElement("h3");
+            name.textContent = item.name || "Menu item";
+
+            const price = document.createElement("div");
+            price.className = "price";
+
+            price.textContent =
+              "₹" + Number(item.price || 0);
+
+            details.append(name, price);
+            card.appendChild(details);
+
+            section.appendChild(card);
+
+          });
+
+          menu.appendChild(section);
+
+        }
+      );
+
     }, (error) => {
+
       status.textContent = "Could not load menu items.";
       console.error(error);
+
     });
+
   }
+
 </script>
 
 </body>
 </html>
-
